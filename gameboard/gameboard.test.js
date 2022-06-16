@@ -175,3 +175,5 @@ test('all two ships have been sunk', ()=>{
     board1.receiveAttack([1,1]);
     expect(board1.allSunk()).toEqual(true);
 });
+
+//add later test: test if same coordinate cant be hit twice
