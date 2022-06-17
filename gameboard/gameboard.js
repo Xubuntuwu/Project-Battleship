@@ -66,7 +66,7 @@ function Gameboard(){
         return ships.every(ship=> ship.isSunk()===true);
     }
     checkLegalMove = function([x,y]){
-        if(this.board[x][y]!==false && x<width && y<length){
+        if(this.board[x][y]!==false){
             return true;
         }
         else{
@@ -75,7 +75,7 @@ function Gameboard(){
     }
 
     return{
-        board, placeShip, receiveAttack, missedShots, allSunk, legalMoves, checkLegalMove, doubleShots, width, length
+        board, placeShip, receiveAttack, missedShots, allSunk, legalMoves, checkLegalMove, doubleShots
     }
 }
 

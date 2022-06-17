@@ -81,7 +81,7 @@ function Gameboard(){
             ship.toHit(hitloc);
             this.board[x][y]= true;
         }
-        else if(this.board[x][y]===false){ 
+        else if(this.board[x][y]===false ||this.board[x][y]===true){ 
             // this.doubleShots.push([x,y]);//for testing illegal moves (twice the same shot)
             throw 'You can\'t shoot the same shot twice';
         }
@@ -96,7 +96,7 @@ function Gameboard(){
         return ships.every(ship=> ship.isSunk()===true);
     }
     checkLegalMove = function([x,y]){
-        if(x<this.width && y<this.length && this.board[x][y]===undefined){
+        if(x<this.width && y<this.length && this.board[x][y]!==true && this.board[x][y]!==false){
             return true;
         }
         else{
@@ -122,43 +122,55 @@ function Player(){
 }
 
 function mainLoop(){
-    const player1 = Player();
-    const computer = Player();
-    const allplayers = [player1, computer];
-    const board1 = Gameboard();
-    const computerboard = Gameboard();
-    const allboards = [board1, computerboard];
-    const ship1 = Ship(3);
-    const ship2 = Ship(1);
-    const ship3 = Ship(3);
-    const ship4 = Ship(1);
-
-
+    let player1 = Player();
+    let computer = Player();
+    // const allplayers = [player1, computer];
+    let board1 = Gameboard();
+    let computerboard = Gameboard();
+    let allboards = [board1, computerboard];
+    let ship1 = Ship(3);
+    let ship2 = Ship(1);
+    let ship3 = Ship(3);
+    let ship4 = Ship(1);
     let allShipsSunk = false;
     function checkAllShipsSunk(){
         allShipsSunk= allboards.some(e=>e.allSunk());
     }
+    resetgame=()=>{
+        player1 = Player();
+        computer = Player();
+        board1 = Gameboard();
+        computerboard = Gameboard();
+        allboards = [board1, computerboard];
+        ship1 = Ship(3);
+        ship2 = Ship(1);
+        ship3 = Ship(3);
+        ship4 = Ship(1);
+        placeRandomShips(board1, ship1);
+        placeRandomShips(board1, ship2);
+        placeRandomShips(computerboard, ship3);
+        placeRandomShips(computerboard, ship4);
+        allShipsSunk=false;
+    }
+    resetgame();
+    
     const board1div = document.getElementById('board1');
     const board2div = document.getElementById('board2');
 
-    board1.placeShip(ship1, 'vertical', [0,0]);
-    board1.placeShip(ship2, 'horizontal', [2,0]);
-    placeRandomShips(computerboard, ship3);
-    placeRandomShips(computerboard, ship4);
+    console.table(board1.board);
     console.table(computerboard.board);
 
-
-    displayBoard(board1, board1div);
-    displayBoard(computerboard, board2div);
+    displayBoard(board1, board1div,true);
+    displayBoard(computerboard, board2div, false);
 
     gameloopstart = ()=>{board2div.addEventListener('click', gameloop = (e)=>{
-            displayBoard(board1, board1div);
-            displayBoard(computerboard, board2div);
+            displayBoard(board1, board1div, true);
+            displayBoard(computerboard, board2div, false);
             let coordinates = e.target.id.split(',');
             coordinates = coordinates.map(e=> Number(e));
             if(computerboard.checkLegalMove(coordinates)){
                 player1.attackEnemy(computerboard, coordinates);
-                displayBoard(computerboard, board2div);
+                displayBoard(computerboard, board2div, false);
                 console.table(computerboard.board);   
                 checkAllShipsSunk();          
                 if(allShipsSunk){
@@ -168,7 +180,7 @@ function mainLoop(){
                 else{
                     console.log('computer move');
                     setTimeout(computer.randomMove(board1),'1000');
-                    displayBoard(board1, board1div);
+                    displayBoard(board1, board1div,true);
                 }
             }
             else throw 'illegal double move shouldnt be possible';
@@ -219,7 +231,7 @@ function placeRandomShips(board, ship){
 }
 
 
-function displayBoard(board, boarddiv){
+function displayBoard(board, boarddiv,showships){
     boarddiv.innerHTML='';
     for(let i=0; i<board.board.length; i++){
         for(let j=0; j<board.board[i].length;j++){
@@ -227,14 +239,32 @@ function displayBoard(board, boarddiv){
             boardpoint.setAttribute('id', `${[i,j]}`);
             boardpoint.setAttribute('class', 'innerbox');
             if(board.board[i][j]!==undefined){
-                if(board.board[i][j]===false){
-                    boardpoint.textContent= "X";
+                if(showships===true){
+                    if(board.board[i][j]===false){
+                        boardpoint.textContent= "X";
+                    }
+                    else if(board.board[i][j]===true){
+                        boardpoint.textContent = 'S';
+                        boardpoint.style.backgroundColor = 'lightblue';
+                    }
+                    else if(typeof(board.board[i][j])==='object'){
+                        console.log('alohaaaa');
+                        boardpoint.style.backgroundColor = 'lightblue';
+                    }
                 }
-                else if(board.board[i][j]===true){
-                    boardpoint.textContent = 'S';
+                else{
+                    if(board.board[i][j]===false){
+                        boardpoint.textContent= "X";
+                    }
+                    else if(board.board[i][j]===true){
+                        boardpoint.textContent = 'S';
+                    }
                 }
             }
             boarddiv.appendChild(boardpoint);
         }
     }
 }
+
+//MAKE RESTART/START BUTTONS FUNCTIONAL
+//MOVE AROUND YOUR OWN SHIPS BEFORE THE GAME STARTS
