@@ -42,19 +42,31 @@ function Gameboard(){
     }
     placeShip = function (ship, orientation, [x, y]){ //y and x are actually opposite in visual array
         if(orientation==='vertical'){
+            this.ships.push(ship);
             for(i=0;i<ship.span;i++){
                 this.board[x][y+i]=[ship, 0+i];
-                this.ships.push(ship);
             }
         }
         else if(orientation==='horizontal'){
+            this.ships.push(ship);
             for(i=0;i<ship.span;i++){
                 this.board[x+i][y]=[ship, 0+i];
-                this.ships.push(ship);
             }
         }
         else{
             throw 'invalid orientation, placeShip';
+        }
+    }
+    removeShip = function(ship){
+        if(this.ships.findIndex(e=>e==ship)!==-1){
+            this.ships.splice(this.ships.findIndex(e=>e==ship),1);
+            for(let i=0;i<this.length;i++){
+                for(let j=0;j<this.width;j++){
+                    if (this.board[i][j]!==undefined && this.board[i][j][0]==ship){
+                        this.board[i][j]=undefined;
+                    }
+                }
+            }
         }
     }
     returnIndexOf = function(array,arrayparent){ //apparantly indexOf() doesnt work on arrays, === and == output false regardless
@@ -104,7 +116,7 @@ function Gameboard(){
         }
     }
     checkLegalPlacement = function([x,y]){
-        if(x<this.width && y<this.length && this.board[x][y]===undefined && this!==window){ //i dont know why this sometimes equals window and sometimes doesnt!!
+        if(x<this.width && y<this.length && this.board[x][y]===undefined && this!==window){ //i dont know why this sometimes equals window and sometimes doesnt!! --> i forgot to add boardname before .checklegalplacement so it automatically added in "window."
             return true;
         }
         else{
@@ -113,7 +125,7 @@ function Gameboard(){
     }
 
     return{
-        board, placeShip, receiveAttack, missedShots, allSunk, legalMoves, checkLegalMove, doubleShots, ships, width, length, checkLegalPlacement
+        board, placeShip, receiveAttack, missedShots, allSunk, legalMoves, checkLegalMove, doubleShots, ships, width, length, checkLegalPlacement, removeShip
     }
 }
 function Player(){
@@ -133,12 +145,16 @@ function turnintoarray(coordinates){
     coordinates = coordinates.map(e=> Number(e));
     return coordinates;
 }
+//GLOBAL VARIABLES, USED TO BE IN MAINLOOP
+let board1 = Gameboard();
+let computerboard = Gameboard();
+const board1div = document.getElementById('board1');
+const board2div = document.getElementById('board2');
+
 function mainLoop(){
     let player1 = Player();
     let computer = Player();
     // const allplayers = [player1, computer];
-    let board1 = Gameboard();
-    let computerboard = Gameboard();
     let allboards = [board1, computerboard];
     let ship1;
     let ship2;
@@ -188,9 +204,6 @@ function mainLoop(){
         allShipsSunk=false;
     }
     resetgame();
-    
-    const board1div = document.getElementById('board1');
-    const board2div = document.getElementById('board2');
 
     // console.table(board1.board);
     // console.table(computerboard.board);
@@ -231,17 +244,74 @@ function mainLoop(){
         displayBoard(board1, board1div,true);
         displayBoard(computerboard, board2div, false);
         let dragships = document.querySelectorAll('.dragship');
-        console.log(dragships);
-        dragships.forEach(e=> e.addEventListener('dragstart', moveShips))
-        // board1div.addEventListener('click', (e)=>moveShips(e,board1));
+        let dragzones = document.querySelectorAll('.dragzone');
+        dragships.forEach(e=> e.addEventListener('dragstart', moveShips(board1)));
+        dragzones.forEach(e=> e.addEventListener('dragover', dragOver));
+        dragzones.forEach(e=> e.addEventListener('drop', drop));
+
     });
 }
 mainLoop();
 
-function moveShips(e){
+function moveShips(board1){
+    return function(e){
+        let shipobject = board1.board[turnintoarray(e.target.id)[0]][turnintoarray(e.target.id)[1]][0];
+        console.log(e.target.id);
+        console.log(board1.ships);
+        console.log(board1.ships.findIndex(e=>e==shipobject));
+        e.dataTransfer.setData('text/plain', e.target.id);
+        e.dataTransfer.setData('shipindex', JSON.stringify(board1.ships.findIndex(e=>e==shipobject)));
+
+    }
+}
+
+function dragOver(e) {
+    e.preventDefault();
+}
+function drop(e) {
+    e.preventDefault();
+    const shipindex = JSON.parse(e.dataTransfer.getData('shipindex'));
+    const originalloc= turnintoarray(e.dataTransfer.getData('text/plain'));
+    console.log(originalloc);
     console.log(e.target.id);
-    // e.dataTransfer.setData('text/plain', e.target.id);
-    // console.log(board.board[turnintoarray(e.target.id)[1]][turnintoarray(e.target.id)[0]]);
+    const ship = board1.ships[shipindex];
+    const targetloc = turnintoarray(e.target.id);
+
+    if(ship.orient==='horizontal'){
+        let [x,y] =targetloc;
+        let allLegal = [];
+        for(let i=0; i<ship.span;i++){
+            allLegal.push(board1.checkLegalPlacement([x+i,y]));
+        }
+        if(allLegal.every(e=>e===true)){
+            board1.removeShip(ship);
+            board1.placeShip(ship, ship.orient, targetloc);
+            displayBoard(board1, board1div, true);
+        }
+        else{
+            //
+        }
+    }
+    else if(ship.orient==='vertical'){
+        let [x,y] =targetloc;
+        let allLegal = [];
+        for(let i=0; i<ship.span;i++){
+            allLegal.push(board1.checkLegalPlacement([x,y+i]));
+        }
+        if(allLegal.every(e=>e===true)){
+            board1.removeShip(ship);
+            board1.placeShip(ship, ship.orient, targetloc);
+            displayBoard(board1, board1div, true);
+        }
+        else{
+            //
+        }
+    }
+    let dragships = document.querySelectorAll('.dragship');
+    let dragzones = document.querySelectorAll('.dragzone');
+    dragships.forEach(e=> e.addEventListener('dragstart', moveShips(board1)));
+    dragzones.forEach(e=> e.addEventListener('dragover', dragOver));
+    dragzones.forEach(e=> e.addEventListener('drop', drop));
 }
 
 function placeRandomShips(board, ship){
@@ -260,7 +330,8 @@ function placeRandomShips(board, ship){
             }
             if(allLegal.every(e=>e===true)){
                 board.placeShip(ship, randomorient, randomloc);
-                console.table(board.board);
+                ship.orient= randomorient;
+                // console.table(board.board);
             }
             else{
                 calcrandom();
@@ -271,11 +342,11 @@ function placeRandomShips(board, ship){
             let [x,y] =randomloc;
             let allLegal = [];
             for(let i=0; i<ship.span;i++){
-                allLegal.push(checkLegalPlacement([x,y+i]));
+                allLegal.push(board.checkLegalPlacement([x,y+i]));
             }
             if(allLegal.every(e=>e===true)){
                 board.placeShip(ship, randomorient, randomloc);
-                console.table(board.board);
+                ship.orient= randomorient;
             }
             else{
                 calcrandom();
@@ -293,7 +364,10 @@ function displayBoard(board, boarddiv,showships){
         for(let j=0; j<board.board[i].length;j++){
             const boardpoint = document.createElement('div');
             boardpoint.setAttribute('id', `${[i,j]}`);
-            boardpoint.setAttribute('class', 'innerbox');
+            boardpoint.classList.add('innerbox');
+            if(showships===true){
+                boardpoint.classList.add('dragzone');
+            }
             if(board.board[i][j]!==undefined){
                 if(showships===true){
                     if(board.board[i][j]===false){
@@ -301,13 +375,14 @@ function displayBoard(board, boarddiv,showships){
                     }
                     else if(board.board[i][j]===true){
                         boardpoint.textContent = 'S';
-                        boardpoint.setAttribute('class', 'ship');
+                        boardpoint.classList.add('ship');
                         boardpoint.style.backgroundColor = 'lightblue';
                     }
                     else if(typeof(board.board[i][j])==='object'){
                         boardpoint.style.backgroundColor = 'lightblue';
+                        boardpoint.classList.remove('dragzone');
                         if(board.board[i][j][1]===0){
-                            boardpoint.setAttribute('class', 'dragship');
+                            boardpoint.classList.add('dragship');
                             boardpoint.setAttribute('draggable', 'true');
                         }
                     }
@@ -321,6 +396,9 @@ function displayBoard(board, boarddiv,showships){
                     }
                 }
             }
+            // else if(board.board[i][j]===undefined){
+            //     boardpoint.classList.add('dragzone');
+            // }
             boarddiv.appendChild(boardpoint);
         }
     }
