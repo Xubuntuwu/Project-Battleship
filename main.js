@@ -306,7 +306,7 @@ function drop(e) {
         let [x,y] =targetloc;
         let allLegal = [];
         for(let i=0; i<ship.span;i++){
-            allLegal.push(board1.checkLegalPlacement([x+i,y]));
+            allLegal.push(board1.checkLegalPlacementTurn([x+i,y], ship)); //if i change the shiplocations to possible dragzones too this will probably work
         }
         if(allLegal.every(e=>e===true)){
             board1.removeShip(ship);
@@ -318,7 +318,7 @@ function drop(e) {
         let [x,y] =targetloc;
         let allLegal = [];
         for(let i=0; i<ship.span;i++){
-            allLegal.push(board1.checkLegalPlacement([x,y+i]));
+            allLegal.push(board1.checkLegalPlacementTurn([x,y+i],ship));
         }
         if(allLegal.every(e=>e===true)){
             board1.removeShip(ship);
