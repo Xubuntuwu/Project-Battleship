@@ -46,6 +46,6 @@ html, body{
     justify-content: center;
     align-items: center;
 }
-.hide{
-    display: none;
+.dragship{
+    border: 2px solid aqua;
 }

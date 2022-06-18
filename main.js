@@ -92,6 +92,7 @@ function Gameboard(){
             let hitloc = this.board[x][y][1];
             ship.toHit(hitloc);
             this.board[x][y]= true;
+            return 'hit';
         }
         else if(this.board[x][y]===false ||this.board[x][y]===true){ 
             // this.doubleShots.push([x,y]);//for testing illegal moves (twice the same shot)
@@ -130,7 +131,8 @@ function Gameboard(){
 }
 function Player(){
     attackEnemy = function(board, [x,y]){
-        board.receiveAttack([x,y]);
+        let hit =  board.receiveAttack([x,y]);
+        return hit;
     }
     randomMove = function(board){
         const nextmove = board.legalMoves[Math.floor(Math.random() * board.legalMoves.length)];
@@ -148,6 +150,7 @@ function turnintoarray(coordinates){
 //GLOBAL VARIABLES, USED TO BE IN MAINLOOP
 let board1 = Gameboard();
 let computerboard = Gameboard();
+let gameon= false;
 const board1div = document.getElementById('board1');
 const board2div = document.getElementById('board2');
 
@@ -205,13 +208,13 @@ function mainLoop(){
     }
     resetgame();
 
-    // console.table(board1.board);
-    // console.table(computerboard.board);
-
     displayBoard(board1, board1div,true);
     displayBoard(computerboard, board2div, false);
 
     gameloopstart = ()=>{
+        gameon= true;
+        displayBoard(board1, board1div, true);
+        displayBoard(computerboard, board2div, false);
         board2div.addEventListener('click', gameloop);
     }
     gameloop = (e)=>{
@@ -219,7 +222,7 @@ function mainLoop(){
             displayBoard(computerboard, board2div, false);
             let coordinates = turnintoarray(e.target.id);
             if(computerboard.checkLegalMove(coordinates)){
-                player1.attackEnemy(computerboard, coordinates);
+                let hit = player1.attackEnemy(computerboard, coordinates);
                 displayBoard(computerboard, board2div, false);
                 console.table(computerboard.board);   
                 checkAllShipsSunk();          
@@ -227,7 +230,7 @@ function mainLoop(){
                     alert('GAME HAS ENDED');
                     board2div.removeEventListener('click', gameloop);
                 }
-                else{
+                else if (hit!=='hit'){
                     console.log('computer move');
                     setTimeout(computer.randomMove(board1),'1000');
                     displayBoard(board1, board1div,true);
@@ -240,6 +243,7 @@ function mainLoop(){
     startbutton.addEventListener('click', gameloopstart);
     restartbutton.addEventListener('click',()=>{
         board2div.removeEventListener('click', gameloop);
+        gameon=false;
         resetgame();
         displayBoard(board1, board1div,true);
         displayBoard(computerboard, board2div, false);
@@ -266,6 +270,7 @@ function moveShips(board1){
 }
 
 function dragOver(e) {
+    //this is necessary for drag and drop functionality
     e.preventDefault();
 }
 function drop(e) {
@@ -288,9 +293,6 @@ function drop(e) {
             board1.placeShip(ship, ship.orient, targetloc);
             displayBoard(board1, board1div, true);
         }
-        else{
-            //
-        }
     }
     else if(ship.orient==='vertical'){
         let [x,y] =targetloc;
@@ -302,9 +304,6 @@ function drop(e) {
             board1.removeShip(ship);
             board1.placeShip(ship, ship.orient, targetloc);
             displayBoard(board1, board1div, true);
-        }
-        else{
-            //
         }
     }
     let dragships = document.querySelectorAll('.dragship');
@@ -365,8 +364,12 @@ function displayBoard(board, boarddiv,showships){
             const boardpoint = document.createElement('div');
             boardpoint.setAttribute('id', `${[i,j]}`);
             boardpoint.classList.add('innerbox');
-            if(showships===true){
+            if(showships===true &&gameon===false){
                 boardpoint.classList.add('dragzone');
+            }
+            else if(showships===true && gameon===true){
+                let dragships= document.querySelectorAll('.dragship');
+                dragships.forEach(e=>e.classList.remove('dragship'));
             }
             if(board.board[i][j]!==undefined){
                 if(showships===true){
@@ -396,12 +399,9 @@ function displayBoard(board, boarddiv,showships){
                     }
                 }
             }
-            // else if(board.board[i][j]===undefined){
-            //     boardpoint.classList.add('dragzone');
-            // }
             boarddiv.appendChild(boardpoint);
         }
     }
 }
 
-//MOVE AROUND YOUR OWN SHIPS BEFORE THE GAME STARTS
+//CHANGE ORIENTATION OF SHIPS WHEN CLICKING ON THEM (IF BOARDPLACEMENT ALLOWS IT)
