@@ -124,9 +124,17 @@ function Gameboard(){
             return false;
         }
     }
+    checkLegalPlacementTurn = function([x,y], ship){
+        if(x<this.width && y<this.length && this.board[x][y]===undefined || this.board[x][y][0]===ship && this!==window){ //i dont know why this sometimes equals window and sometimes doesnt!! --> i forgot to add boardname before .checklegalplacement so it automatically added in "window."
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
 
     return{
-        board, placeShip, receiveAttack, missedShots, allSunk, legalMoves, checkLegalMove, doubleShots, ships, width, length, checkLegalPlacement, removeShip
+        board, placeShip, receiveAttack, missedShots, allSunk, legalMoves, checkLegalMove, doubleShots, ships, width, length, checkLegalPlacement, removeShip, checkLegalPlacementTurn
     }
 }
 function Player(){
@@ -224,20 +232,32 @@ function mainLoop(){
             if(computerboard.checkLegalMove(coordinates)){
                 let hit = player1.attackEnemy(computerboard, coordinates);
                 displayBoard(computerboard, board2div, false);
-                console.table(computerboard.board);   
+                // console.table(computerboard.board);   
                 checkAllShipsSunk();          
                 if(allShipsSunk){
                     alert('GAME HAS ENDED');
                     board2div.removeEventListener('click', gameloop);
                 }
                 else if (hit!=='hit'){
-                    console.log('computer move');
+                    // console.log('computer move');
                     setTimeout(computer.randomMove(board1),'1000');
                     displayBoard(board1, board1div,true);
                 }
             }
             else throw 'illegal double move shouldnt be possible';
     }
+    gameon=false;
+    //restart button initial
+    resetgame();
+    displayBoard(board1, board1div,true);
+    displayBoard(computerboard, board2div, false);
+    let dragships = document.querySelectorAll('.dragship');
+    let dragzones = document.querySelectorAll('.dragzone');
+    dragships.forEach(e=> e.addEventListener('click', clickVertical));
+    dragships.forEach(e=> e.addEventListener('dragstart', moveShips(board1)));
+    dragzones.forEach(e=> e.addEventListener('dragover', dragOver));
+    dragzones.forEach(e=> e.addEventListener('drop', drop));
+
     const startbutton = document.getElementById('start');
     const restartbutton = document.getElementById('restart');
     startbutton.addEventListener('click', gameloopstart);
@@ -249,6 +269,7 @@ function mainLoop(){
         displayBoard(computerboard, board2div, false);
         let dragships = document.querySelectorAll('.dragship');
         let dragzones = document.querySelectorAll('.dragzone');
+        dragships.forEach(e=> e.addEventListener('click', clickVertical));
         dragships.forEach(e=> e.addEventListener('dragstart', moveShips(board1)));
         dragzones.forEach(e=> e.addEventListener('dragover', dragOver));
         dragzones.forEach(e=> e.addEventListener('drop', drop));
@@ -260,9 +281,9 @@ mainLoop();
 function moveShips(board1){
     return function(e){
         let shipobject = board1.board[turnintoarray(e.target.id)[0]][turnintoarray(e.target.id)[1]][0];
-        console.log(e.target.id);
-        console.log(board1.ships);
-        console.log(board1.ships.findIndex(e=>e==shipobject));
+        // console.log(e.target.id);
+        // console.log(board1.ships);
+        // console.log(board1.ships.findIndex(e=>e==shipobject));
         e.dataTransfer.setData('text/plain', e.target.id);
         e.dataTransfer.setData('shipindex', JSON.stringify(board1.ships.findIndex(e=>e==shipobject)));
 
@@ -273,12 +294,11 @@ function dragOver(e) {
     //this is necessary for drag and drop functionality
     e.preventDefault();
 }
+
 function drop(e) {
     e.preventDefault();
     const shipindex = JSON.parse(e.dataTransfer.getData('shipindex'));
     const originalloc= turnintoarray(e.dataTransfer.getData('text/plain'));
-    console.log(originalloc);
-    console.log(e.target.id);
     const ship = board1.ships[shipindex];
     const targetloc = turnintoarray(e.target.id);
 
@@ -308,11 +328,47 @@ function drop(e) {
     }
     let dragships = document.querySelectorAll('.dragship');
     let dragzones = document.querySelectorAll('.dragzone');
+    dragships.forEach(e=> e.addEventListener('click', clickVertical));
     dragships.forEach(e=> e.addEventListener('dragstart', moveShips(board1)));
     dragzones.forEach(e=> e.addEventListener('dragover', dragOver));
     dragzones.forEach(e=> e.addEventListener('drop', drop));
 }
-
+function clickVertical(e){
+    let location = turnintoarray(e.target.id);
+    let ship = board1.board[location[0]][location[1]][0];
+    if(ship.orient==='vertical'){ //=== horizontal visually
+        let [x,y] =location;
+        let allLegal = [];
+        for(let i=0; i<ship.span;i++){
+            allLegal.push(board1.checkLegalPlacementTurn([x+i,y], ship));
+        }
+        if(allLegal.every(e=>e===true)){
+            board1.removeShip(ship);
+            ship.orient='horizontal'
+            board1.placeShip(ship, ship.orient, location);
+            displayBoard(board1, board1div, true);
+        }
+    }
+    else if(ship.orient==='horizontal'){ //===vertical visually
+        let [x,y] =location;
+        let allLegal = [];
+        for(let i=0; i<ship.span;i++){
+            allLegal.push(board1.checkLegalPlacementTurn([x,y+i],ship));
+        }
+        if(allLegal.every(e=>e===true)){
+            board1.removeShip(ship);
+            ship.orient='vertical';
+            board1.placeShip(ship, ship.orient, location);
+            displayBoard(board1, board1div, true);
+        }
+    }
+    let dragships = document.querySelectorAll('.dragship');
+    let dragzones = document.querySelectorAll('.dragzone');
+    dragships.forEach(e=> e.addEventListener('click', clickVertical));
+    dragships.forEach(e=> e.addEventListener('dragstart', moveShips(board1)));
+    dragzones.forEach(e=> e.addEventListener('dragover', dragOver));
+    dragzones.forEach(e=> e.addEventListener('drop', drop));
+}
 function placeRandomShips(board, ship){
     const orientations = ['horizontal', 'vertical'];
     let randomloc = board.legalMoves[Math.floor(Math.random() * board.legalMoves.length)];
