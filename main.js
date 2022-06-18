@@ -460,4 +460,8 @@ function displayBoard(board, boarddiv,showships){
     }
 }
 
-//CHANGE ORIENTATION OF SHIPS WHEN CLICKING ON THEM (IF BOARDPLACEMENT ALLOWS IT)
+//if you want to change it to move things from the middle of the ship, you can check which
+//this.board[1] which shows the index of the how manyeth part of the ship it is
+//then you can count backwards in the location of the board and place the span of the ship from
+//that location and remove the old ship
+//you also need to make all ship parts draggable
