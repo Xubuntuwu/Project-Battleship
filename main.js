@@ -439,7 +439,7 @@ function displayBoard(board, boarddiv,showships){
                     }
                     else if(typeof(board.board[i][j])==='object'){
                         boardpoint.style.backgroundColor = 'lightblue';
-                        boardpoint.classList.remove('dragzone');
+                        // boardpoint.classList.remove('dragzone'); //fixed it by commenting it out :)
                         if(board.board[i][j][1]===0){
                             boardpoint.classList.add('dragship');
                             boardpoint.setAttribute('draggable', 'true');
